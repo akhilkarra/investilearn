@@ -45,3 +45,4 @@ repos:
         language: system
         entry: bash -c 'branch=$(git rev-parse --abbrev-ref HEAD); if [ "$branch" = "main" ]; then echo "Pushing directly to main is blocked. Create a PR from a feature branch."; exit 1; fi'
         stages: [pre-push]
+        pass_filenames: false
