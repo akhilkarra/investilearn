@@ -1,14 +1,11 @@
-"""Placeholder test file - add your tests here when stashed changes are applied."""
+"""Integration tests for utilities modules.
+
+This file contains integration tests that verify the utilities work together.
+Unit tests for individual modules are in test_ratio_calculator.py,
+test_data_fetcher.py, and test_visualizations.py.
+"""
 
 
 def test_placeholder():
     """Placeholder test to ensure pytest works."""
     assert True
-
-
-# Add your actual tests here after unstashing the utility modules
-# Example:
-# def test_calculate_ratios(sample_stock_info):
-#     from utils.ratio_calculator import calculate_ratios
-#     ratios = calculate_ratios(sample_stock_info)
-#     assert ratios['ROE'] is not None
