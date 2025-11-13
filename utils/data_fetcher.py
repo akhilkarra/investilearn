@@ -4,6 +4,24 @@ import streamlit as st
 import yfinance as yf
 
 
+@st.cache_resource(ttl=3600)  # Cache for 1 hour
+def _get_stock_object(ticker):
+    """
+    Create and cache a yfinance Ticker object
+
+    Args:
+        ticker: Stock ticker symbol (e.g., 'AAPL', 'MSFT')
+
+    Returns:
+        yf.Ticker object or None on error
+    """
+    try:
+        return yf.Ticker(ticker)
+    except Exception as e:
+        st.error(f"Error creating ticker object for {ticker}: {str(e)}")
+        return None
+
+
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def get_stock_info(ticker):
     """
@@ -13,40 +31,42 @@ def get_stock_info(ticker):
         ticker: Stock ticker symbol (e.g., 'AAPL', 'MSFT')
 
     Returns:
-        tuple: (stock object, info dictionary) or (None, None) on error
+        dict: Stock info dictionary or None on error
     """
     try:
-        stock = yf.Ticker(ticker)
+        stock = _get_stock_object(ticker)
+        if stock is None:
+            return None
+
         info = stock.info
 
         # Validate that we got meaningful data
         if not info or "symbol" not in info:
             st.error(f"No data found for ticker: {ticker}")
-            return None, None
+            return None
 
-        return stock, info
+        return info
     except Exception as e:
         st.error(f"Error fetching data for {ticker}: {str(e)}")
-        return None, None
+        return None
 
 
 @st.cache_data(ttl=3600)
-def get_financial_statements(ticker, _stock=None):
+def get_financial_statements(ticker):
     """
     Fetch financial statements for a given ticker
 
     Args:
         ticker: Stock ticker symbol
-        _stock: Optional yfinance stock object to reuse (avoids duplicate API calls)
-                Prefixed with underscore to exclude from Streamlit cache key
 
     Returns:
         tuple: (income_statement, balance_sheet, cash_flow) DataFrames
                or (None, None, None) on error
     """
     try:
-        # Reuse stock object if provided, otherwise create new one
-        stock = _stock if _stock is not None else yf.Ticker(ticker)
+        stock = _get_stock_object(ticker)
+        if stock is None:
+            return None, None, None
 
         # Fetch annual financial statements
         income_stmt = stock.financials
