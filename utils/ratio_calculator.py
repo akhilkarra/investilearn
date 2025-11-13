@@ -19,17 +19,17 @@ def calculate_ratios(info, income_stmt=None, balance_sheet=None):
 
     try:
         # Profitability ratios
-        roe = info.get("returnOnEquity", 0)
-        ratios["ROE"] = roe * 100 if roe else None
+        roe = info.get("returnOnEquity", None)
+        ratios["ROE"] = roe * 100 if roe is not None else None
 
-        roa = info.get("returnOnAssets", 0)
-        ratios["ROA"] = roa * 100 if roa else None
+        roa = info.get("returnOnAssets", None)
+        ratios["ROA"] = roa * 100 if roa is not None else None
 
-        profit_margin = info.get("profitMargins", 0)
-        ratios["Net Profit Margin"] = profit_margin * 100 if profit_margin else None
+        profit_margin = info.get("profitMargins", None)
+        ratios["Net Profit Margin"] = profit_margin * 100 if profit_margin is not None else None
 
-        gross_margin = info.get("grossMargins", 0)
-        ratios["Gross Profit Margin"] = gross_margin * 100 if gross_margin else None
+        gross_margin = info.get("grossMargins", None)
+        ratios["Gross Profit Margin"] = gross_margin * 100 if gross_margin is not None else None
 
         # Liquidity ratios
         ratios["Current Ratio"] = info.get("currentRatio", None)
@@ -37,6 +37,39 @@ def calculate_ratios(info, income_stmt=None, balance_sheet=None):
 
         # Leverage ratios
         ratios["Debt to Equity"] = info.get("debtToEquity", None)
+
+        # Calculate Interest Coverage if income statement data available
+        if income_stmt is not None and not income_stmt.empty:
+            try:
+                # Get most recent column (latest financial data)
+                latest_data = income_stmt.iloc[:, 0]
+                ebit = latest_data.get("EBIT", None)
+                interest_expense = latest_data.get("Interest Expense", None)
+
+                if ebit is not None and interest_expense is not None and interest_expense != 0:
+                    ratios["Interest Coverage"] = ebit / abs(interest_expense)
+                else:
+                    ratios["Interest Coverage"] = None
+            except (KeyError, IndexError, TypeError):
+                ratios["Interest Coverage"] = None
+        else:
+            ratios["Interest Coverage"] = None
+
+        # Calculate Debt Ratio if balance sheet data available
+        if balance_sheet is not None and not balance_sheet.empty:
+            try:
+                latest_data = balance_sheet.iloc[:, 0]
+                total_debt = latest_data.get("Total Debt", None)
+                total_assets = latest_data.get("Total Assets", None)
+
+                if total_debt is not None and total_assets is not None and total_assets != 0:
+                    ratios["Debt Ratio"] = total_debt / total_assets
+                else:
+                    ratios["Debt Ratio"] = None
+            except (KeyError, IndexError, TypeError):
+                ratios["Debt Ratio"] = None
+        else:
+            ratios["Debt Ratio"] = None
 
         # Valuation ratios
         ratios["P/E Ratio"] = info.get("trailingPE", None)
@@ -75,11 +108,10 @@ def get_ratio_metrics(ratio_category):
             "metrics": [
                 ("Current Ratio", "Current Ratio"),
                 ("Quick Ratio", "Quick Ratio"),
-                ("Cash Ratio", "Cash Ratio"),
             ],
         },
         "Efficiency": {
-            "info": "💡 **Efficiency ratios** show how well assets are being used",
+            "info": "💡 **Efficiency ratios** show how well assets are being used (calculations pending)",
             "metrics": [
                 ("Asset Turnover", "Asset Turnover"),
                 ("Inventory Turnover", "Inventory Turnover"),
@@ -120,7 +152,7 @@ def format_ratio_value(value, ratio_name):
     Returns:
         str: Formatted string for display
     """
-    if value is None or (isinstance(value, float) and value == 0):
+    if value is None:
         return "N/A"
 
     # Percentage ratios

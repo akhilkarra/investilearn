@@ -89,8 +89,8 @@ if search_query:
             sector = info.get("sector", "N/A")
             st.metric("Sector", sector)
 
-        # Get financial statements
-        income_stmt, balance_sheet, cash_flow = get_financial_statements(search_query)
+        # Get financial statements (reuse stock object to avoid duplicate API calls)
+        income_stmt, balance_sheet, cash_flow = get_financial_statements(search_query, stock)
 
         # Calculate ratios
         ratios = calculate_ratios(info, income_stmt, balance_sheet)

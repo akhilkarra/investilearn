@@ -1,6 +1,11 @@
 """Visualization utilities for financial data"""
 
+import logging
+
 import plotly.graph_objects as go
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 
 def create_sankey_diagram(financial_data, statement_type="income"):
@@ -108,7 +113,8 @@ def create_income_sankey(data):
 
         return fig
 
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Error creating income statement Sankey: {str(e)}")
         return create_empty_sankey()
 
 
@@ -165,7 +171,8 @@ def create_cashflow_sankey(data):
 
         return fig
 
-    except Exception:
+    except Exception as e:
+        logger.warning("Error creating cash flow Sankey: %s", str(e))
         return create_empty_sankey()
 
 
@@ -206,7 +213,8 @@ def create_balance_sankey(data):
 
         return fig
 
-    except Exception:
+    except Exception as e:
+        logger.warning("Error creating balance sheet Sankey: %s", str(e))
         return create_empty_sankey()
 
 

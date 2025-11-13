@@ -31,19 +31,22 @@ def get_stock_info(ticker):
 
 
 @st.cache_data(ttl=3600)
-def get_financial_statements(ticker):
+def get_financial_statements(ticker, _stock=None):
     """
     Fetch financial statements for a given ticker
 
     Args:
         ticker: Stock ticker symbol
+        _stock: Optional yfinance stock object to reuse (avoids duplicate API calls)
+                Prefixed with underscore to exclude from Streamlit cache key
 
     Returns:
         tuple: (income_statement, balance_sheet, cash_flow) DataFrames
                or (None, None, None) on error
     """
     try:
-        stock = yf.Ticker(ticker)
+        # Reuse stock object if provided, otherwise create new one
+        stock = _stock if _stock is not None else yf.Ticker(ticker)
 
         # Fetch annual financial statements
         income_stmt = stock.financials
