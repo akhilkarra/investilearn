@@ -179,7 +179,7 @@ if search_query:
                 )
                 if income_stmt is not None:
                     fig = create_sankey_diagram(income_stmt, "income")
-                    st.plotly_chart(fig, width="stretch")
+                    st.plotly_chart(fig, use_container_width=True)
                 else:
                     st.warning("No income statement data available")
 
@@ -187,7 +187,7 @@ if search_query:
                 st.info("💡 **Cash Flow** tracks actual cash in and out of the business")
                 if cash_flow is not None:
                     fig = create_sankey_diagram(cash_flow, "cashflow")
-                    st.plotly_chart(fig, width="stretch")
+                    st.plotly_chart(fig, use_container_width=True)
                 else:
                     st.warning("No cash flow data available")
 
@@ -195,7 +195,7 @@ if search_query:
                 st.info("💡 **Balance Sheet** shows what the company owns vs owes")
                 if balance_sheet is not None:
                     fig = create_sankey_diagram(balance_sheet, "balance")
-                    st.plotly_chart(fig, width="stretch")
+                    st.plotly_chart(fig, use_container_width=True)
                 else:
                     st.warning("No balance sheet data available")
 
