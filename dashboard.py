@@ -2,6 +2,15 @@ from datetime import datetime
 
 import streamlit as st
 
+# Import utility functions
+from utils.data_fetcher import (
+    get_financial_statements,
+    get_news,
+    get_stock_info,
+)
+from utils.ratio_calculator import calculate_ratios, format_ratio_value, get_ratio_metrics
+from utils.visualizations import create_sankey_diagram
+
 # Page configuration
 st.set_page_config(page_title="Fundamental Investment Dashboard", page_icon="📈", layout="wide")
 
@@ -53,140 +62,185 @@ with st.expander("🎯 Advanced Filters (Optional)"):
 
 # Main content area (only show if search query exists)
 if search_query:
-    st.markdown("---")
-    st.subheader(f"Analysis for: {search_query}")
+    # Fetch stock data
+    with st.spinner(f"Fetching data for {search_query}..."):
+        stock, info = get_stock_info(search_query)
 
-    # Three column layout
-    col1, col2, col3 = st.columns([1, 1, 1])
+    if stock and info:
+        # Display company header
+        company_name = info.get("longName", search_query)
+        st.markdown("---")
 
-    # Left Column: Financial Statements (Sankey Diagrams)
-    with col1:
-        st.markdown("### 📊 Financial Statements")
-        st.markdown("*Sankey flow diagrams showing money movement*")
-
-        # Tabs for different financial statements
-        tab1, tab2, tab3 = st.tabs(["Income Statement", "Cash Flow", "Balance Sheet"])
-
-        with tab1:
-            st.info("💡 **Income Statement** shows how revenue flows through expenses to profit")
-            # Placeholder for Sankey diagram
-            st.markdown("```\n📈 Income Statement Sankey\n(To be implemented)\n```")
-            st.text("Revenue → Operating Expenses → Net Income")
-
-        with tab2:
-            st.info("💡 **Cash Flow** tracks actual cash in and out of the business")
-            # Placeholder for Sankey diagram
-            st.markdown("```\n💰 Cash Flow Sankey\n(To be implemented)\n```")
-            st.text("Operating → Investing → Financing → Net Cash")
-
-        with tab3:
-            st.info("💡 **Balance Sheet** shows what the company owns vs owes")
-            # Placeholder for Sankey diagram
-            st.markdown("```\n⚖️ Balance Sheet Sankey\n(To be implemented)\n```")
-            st.text("Assets = Liabilities + Equity")
-
-    # Middle Column: Key Ratios
-    with col2:
-        st.markdown("### 📐 Key Financial Ratios")
-        st.markdown("*Compare company performance to industry and historical trends*")
-
-        # Ratio categories
-        ratio_category = st.selectbox(
-            "Select Ratio Category",
-            ["Profitability", "Liquidity", "Efficiency", "Leverage", "Valuation"],
-        )
-
-        # Placeholder for ratio visualizations
-        st.markdown(f"#### {ratio_category} Ratios")
-
-        if ratio_category == "Profitability":
-            st.info(
-                "💡 **Profitability ratios** measure how efficiently a company generates profit"
+        # Company info header
+        col_header1, col_header2, col_header3, col_header4 = st.columns(4)
+        with col_header1:
+            st.metric("Company", company_name)
+        with col_header2:
+            price = info.get("currentPrice", info.get("regularMarketPrice", "N/A"))
+            prev_close = info.get("previousClose", 0)
+            change = (
+                ((price - prev_close) / prev_close * 100) if (price != "N/A" and prev_close) else 0
             )
-            metrics = [
-                "ROE (Return on Equity)",
-                "ROA (Return on Assets)",
-                "Net Profit Margin",
-                "Gross Profit Margin",
-            ]
-        elif ratio_category == "Liquidity":
-            st.info("💡 **Liquidity ratios** assess ability to meet short-term obligations")
-            metrics = ["Current Ratio", "Quick Ratio", "Cash Ratio"]
-        elif ratio_category == "Efficiency":
-            st.info("💡 **Efficiency ratios** show how well assets are being used")
-            metrics = ["Asset Turnover", "Inventory Turnover", "Days Sales Outstanding"]
-        elif ratio_category == "Leverage":
-            st.info("💡 **Leverage ratios** indicate financial risk from debt")
-            metrics = ["Debt-to-Equity", "Interest Coverage", "Debt Ratio"]
-        else:  # Valuation
-            st.info("💡 **Valuation ratios** help determine if stock is fairly priced")
-            metrics = ["P/E Ratio", "P/B Ratio", "PEG Ratio", "Price-to-Sales"]
+            st.metric("Price", f"${price:.2f}" if price != "N/A" else "N/A", f"{change:+.2f}%")
+        with col_header3:
+            market_cap = info.get("marketCap", 0)
+            st.metric("Market Cap", f"${market_cap / 1e9:.2f}B" if market_cap else "N/A")
+        with col_header4:
+            sector = info.get("sector", "N/A")
+            st.metric("Sector", sector)
 
-        # Display placeholder metrics
-        for metric in metrics:
-            col_m1, col_m2, col_m3 = st.columns(3)
-            with col_m1:
-                st.metric(metric, "N/A", help=f"{metric} - Data to be loaded")
-            with col_m2:
-                st.caption("vs Industry: N/A")
-            with col_m3:
-                st.caption("vs 5Y Avg: N/A")
+        # Get financial statements
+        income_stmt, balance_sheet, cash_flow = get_financial_statements(search_query)
 
-        # Placeholder for comparison chart
-        st.markdown("```\n📊 Historical Trend Chart\n(To be implemented)\n```")
+        # Calculate ratios
+        ratios = calculate_ratios(info, income_stmt, balance_sheet)
 
-    # Right Column: News and Updates
-    with col3:
-        st.markdown("### 📰 Relevant News & Updates")
-        st.markdown("*Stay informed with latest company developments*")
+        st.markdown("---")
 
-        # News filter
-        news_filter = st.radio(
-            "News Type",
-            ["All News", "Earnings Reports", "Press Releases", "Market Analysis"],
-            horizontal=True,
+        # Three column layout
+        col1, col2, col3 = st.columns([1, 1, 1])
+
+        # Left Column: Financial Statements (Sankey Diagrams)
+        with col1:
+            st.markdown("### 📊 Financial Statements")
+            st.markdown("*Sankey flow diagrams showing money movement*")
+
+            # Tabs for different financial statements
+            tab1, tab2, tab3 = st.tabs(["Income Statement", "Cash Flow", "Balance Sheet"])
+
+            with tab1:
+                st.info(
+                    "💡 **Income Statement** shows how revenue flows through expenses to profit"
+                )
+                if income_stmt is not None:
+                    fig = create_sankey_diagram(income_stmt, "income")
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.warning("No income statement data available")
+
+            with tab2:
+                st.info("💡 **Cash Flow** tracks actual cash in and out of the business")
+                if cash_flow is not None:
+                    fig = create_sankey_diagram(cash_flow, "cashflow")
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.warning("No cash flow data available")
+
+            with tab3:
+                st.info("💡 **Balance Sheet** shows what the company owns vs owes")
+                if balance_sheet is not None:
+                    fig = create_sankey_diagram(balance_sheet, "balance")
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.warning("No balance sheet data available")
+
+        # Middle Column: Key Ratios
+        with col2:
+            st.markdown("### 📐 Key Financial Ratios")
+            st.markdown("*Compare company performance to industry trends*")
+
+            # Ratio categories
+            ratio_category = st.selectbox(
+                "Select Ratio Category",
+                ["Profitability", "Liquidity", "Efficiency", "Leverage", "Valuation"],
+            )
+
+            # Get metrics for the selected category
+            info_text, metrics_list = get_ratio_metrics(ratio_category)
+
+            st.markdown(f"#### {ratio_category} Ratios")
+            st.info(info_text)
+
+            # Display actual ratio values
+            for ratio_key, ratio_display in metrics_list:
+                value = ratios.get(ratio_key)
+                formatted_value = format_ratio_value(value, ratio_key)
+
+                col_m1, col_m2, col_m3 = st.columns(3)
+                with col_m1:
+                    if value is not None:
+                        st.metric(ratio_display, formatted_value)
+                    else:
+                        st.metric(ratio_display, "N/A")
+                with col_m2:
+                    st.caption("vs Industry: N/A")
+                with col_m3:
+                    st.caption("vs 5Y Avg: N/A")
+
+        # Right Column: News and Updates
+        with col3:
+            st.markdown("### 📰 Relevant News & Updates")
+            st.markdown("*Stay informed with latest company developments*")
+
+            # Fetch news
+            news_items = get_news(search_query, max_items=10)
+
+            # News filter (for future categorization)
+            news_filter = st.radio(
+                "News Type",
+                ["All News", "Earnings Reports", "Press Releases", "Market Analysis"],
+                horizontal=True,
+            )
+
+            # Display news items
+            st.markdown("#### Recent Headlines")
+
+            if news_items:
+                for item in news_items[:5]:  # Show top 5 news items
+                    with st.container():
+                        title = item.get("title", "No title available")
+                        publisher = item.get("publisher", "Unknown source")
+                        link = item.get("link", "#")
+                        published_time = item.get("providerPublishTime", 0)
+
+                        # Format timestamp
+                        if published_time:
+                            date_str = datetime.fromtimestamp(published_time).strftime("%B %d, %Y")
+                        else:
+                            date_str = "Recent"
+
+                        st.markdown(f"**📌 {title}**")
+                        st.caption(f"{publisher} • {date_str}")
+
+                        # Show link to article
+                        st.markdown(f"[Read more →]({link})")
+                        st.markdown("---")
+            else:
+                st.info("No recent news available for this ticker")
+
+        # Additional sections below the main columns
+        st.markdown("---")
+        st.markdown("### 📚 Additional Resources")
+
+        col_res1, col_res2, col_res3 = st.columns(3)
+
+        with col_res1:
+            st.markdown("#### 📄 SEC Filings")
+            st.markdown("- 10-K Annual Report")
+            st.markdown("- 10-Q Quarterly Report")
+            st.markdown("- 8-K Current Report")
+            st.markdown("- Proxy Statements")
+
+        with col_res2:
+            st.markdown("#### 📊 Historical Performance")
+            st.markdown("- 5-Year Stock Chart")
+            st.markdown("- Dividend History")
+            st.markdown("- Earnings History")
+            st.markdown("- Share Buyback Activity")
+
+        with col_res3:
+            st.markdown("#### 🎓 Learn More")
+            st.markdown("- What is Fundamental Analysis?")
+            st.markdown("- Understanding Financial Ratios")
+            st.markdown("- Long-term Investment Strategies")
+            st.markdown("- Reading Financial Statements")
+
+    else:
+        # If no stock found, show error message
+        st.error(
+            f"Could not find data for '{search_query}'. Please check the ticker symbol and try again."
         )
-
-        # Placeholder for news items
-        st.markdown("#### Recent Headlines")
-
-        # Sample news item structure (placeholder)
-        for i in range(5):
-            with st.container():
-                st.markdown(f"**📌 News Headline {i + 1}**")
-                st.caption(f"Source • {datetime.now().strftime('%B %d, %Y')}")
-                st.markdown("Brief summary of the news article will appear here...")
-                st.markdown("[Read more →](#)")
-                st.markdown("---")
-
-        st.info("💡 News data will be fetched from financial APIs")
-
-    # Additional sections below the main columns
-    st.markdown("---")
-    st.markdown("### 📚 Additional Resources")
-
-    col_res1, col_res2, col_res3 = st.columns(3)
-
-    with col_res1:
-        st.markdown("#### 📄 SEC Filings")
-        st.markdown("- 10-K Annual Report")
-        st.markdown("- 10-Q Quarterly Report")
-        st.markdown("- 8-K Current Report")
-        st.markdown("- Proxy Statements")
-
-    with col_res2:
-        st.markdown("#### 📊 Historical Performance")
-        st.markdown("- 5-Year Stock Chart")
-        st.markdown("- Dividend History")
-        st.markdown("- Earnings History")
-        st.markdown("- Share Buyback Activity")
-
-    with col_res3:
-        st.markdown("#### 🎓 Learn More")
-        st.markdown("- What is Fundamental Analysis?")
-        st.markdown("- Understanding Financial Ratios")
-        st.markdown("- Long-term Investment Strategies")
-        st.markdown("- Reading Financial Statements")
+        st.info("💡 Tip: Try using the stock ticker symbol (e.g., 'AAPL' for Apple Inc.)")
 
 else:
     # Show helpful information when no search is active
