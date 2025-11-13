@@ -69,7 +69,7 @@ jobs:
       continue-on-error: true
 
     - name: Upload bandit report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: bandit-report
         path: bandit-report.json
@@ -91,8 +91,20 @@ jobs:
 
     - name: Check Streamlit app loads
       run: |
-        uv run streamlit run dashboard.py --server.headless true &
-        sleep 10
-        curl -f http://localhost:8501 || exit 1
-      timeout-minutes: 2
+        # Start Streamlit and capture PID for cleanup
+        uv run streamlit run dashboard.py --server.headless true --server.port 8501 --server.address 0.0.0.0 &
+        STREAMLIT_PID=$!
+        cleanup() { if [ -n "$STREAMLIT_PID" ]; then kill $STREAMLIT_PID 2>/dev/null || true; fi }
+        trap cleanup EXIT
+        # Wait up to ~60s for server to come up, checking health endpoint and root
+        for i in {1..30}; do
+          if curl -fsS http://localhost:8501/_stcore/health >/dev/null 2>&1; then
+            echo "Streamlit health endpoint is ready"; break; fi
+          if curl -fsS http://localhost:8501 >/dev/null 2>&1; then
+            echo "Streamlit main page is responding"; break; fi
+          sleep 2
+        done
+        # Final assertion
+        curl -fsS http://localhost:8501/_stcore/health || curl -fsS http://localhost:8501 || (echo "Streamlit did not start in time" && exit 1)
+      timeout-minutes: 3
       continue-on-error: true
