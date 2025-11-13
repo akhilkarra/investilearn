@@ -35,4 +35,14 @@ repos:
     hooks:
       - id: bandit
         args: ["-c", "pyproject.toml"]
-        additional_dependencies: ["bandit[toml]"]
+        additional_dependencies: ["bandit[toml]", "pbr"]
+
+  # Local hooks
+  - repo: local
+    hooks:
+      - id: prevent-push-to-main
+        name: Prevent pushing to main branch
+        language: system
+        entry: bash -c 'branch=$(git rev-parse --abbrev-ref HEAD); if [ "$branch" = "main" ]; then echo "Pushing directly to main is blocked. Create a PR from a feature branch."; exit 1; fi'
+        stages: [pre-push]
+        pass_filenames: false
