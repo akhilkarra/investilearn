@@ -312,7 +312,7 @@ if search_query:
         with col3:
             # AI badge in title (HAX Guideline G1)
             st.markdown(
-                "### 📰 Relevant News & Updates " '<span class="ai-badge">AI Ready</span>',
+                '### 📰 Relevant News & Updates <span class="ai-badge">AI Ready</span>',
                 unsafe_allow_html=True,
             )
             st.markdown("*Stay informed with latest company developments*")
@@ -509,7 +509,7 @@ with st.sidebar:
     if ai_enabled:
         st.success("✓ AI features active")
         st.caption(
-            "💡 Your interactions help improve recommendations. " "No personal data is collected."
+            "💡 Your interactions help improve recommendations. No personal data is collected."
         )
 
         # Show AI confidence level preference (HAX Guideline G2)
@@ -542,7 +542,7 @@ with st.sidebar:
 
     # AI Guide section with badge
     st.markdown(
-        "### � AI Learning Guide " '<span class="ai-badge">Beta</span>', unsafe_allow_html=True
+        '### � AI Learning Guide <span class="ai-badge">Beta</span>', unsafe_allow_html=True
     )
 
     if ai_enabled:
@@ -567,8 +567,7 @@ with st.sidebar:
         # Feedback summary (HAX Guideline G15: Learn from behavior)
         if "feedback_count" in st.session_state:
             st.caption(
-                f"📊 You've provided {st.session_state.feedback_count} "
-                "pieces of feedback. Thanks!"
+                f"📊 You've provided {st.session_state.feedback_count} pieces of feedback. Thanks!"
             )
     else:
         st.info("Enable AI features above to use the guide")
