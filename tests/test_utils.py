@@ -1,7 +1,5 @@
 """Placeholder test file - add your tests here when stashed changes are applied."""
 
-import pytest
-
 
 def test_placeholder():
     """Placeholder test to ensure pytest works."""
