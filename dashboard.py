@@ -153,7 +153,7 @@ if search_query:
         # Sample news item structure (placeholder)
         for i in range(5):
             with st.container():
-                st.markdown(f"**📌 News Headline {i+1}**")
+                st.markdown(f"**📌 News Headline {i + 1}**")
                 st.caption(f"Source • {datetime.now().strftime('%B %d, %Y')}")
                 st.markdown("Brief summary of the news article will appear here...")
                 st.markdown("[Read more →](#)")
