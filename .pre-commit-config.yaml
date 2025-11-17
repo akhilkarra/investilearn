@@ -1,7 +1,7 @@
 repos:
   # Ruff for fast Python linting
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.6
+    rev: v0.14.5
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
@@ -9,7 +9,7 @@ repos:
 
   # Type checking with mypy
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.7.1
+    rev: v1.18.2
     hooks:
       - id: mypy
         additional_dependencies: [types-requests]
@@ -17,7 +17,7 @@ repos:
 
   # General file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -31,7 +31,7 @@ repos:
 
   # Security checks
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.5
+    rev: 1.9.0
     hooks:
       - id: bandit
         args: ["-c", "pyproject.toml"]
