@@ -167,15 +167,28 @@ def render_coach_panel(company_context: dict | None = None, auto_prompt: str | N
                         stream=True,
                     )
 
-                    # Collect the full response
+                    # Collect the full response with blurred streaming display
+                    chunk_count = 0
                     for chunk in stream:
+                        chunk_count += 1
+
                         if st.session_state.get("stop_generation", False):
                             full_response += "\n\n*[Generation stopped by user]*"
                             break
-                        if isinstance(chunk, dict):
-                            message_content = chunk.get("message", {}).get("content")
+
+                        # Extract content from ChatResponse object
+                        if hasattr(chunk, "message"):
+                            message_content = chunk.message.content
                             if message_content:
                                 full_response += str(message_content)
+                                # Show heavily blurred during generation
+                                response_placeholder.markdown(
+                                    f'<div style="filter: blur(8px); '
+                                    f"user-select: none; "
+                                    f'color: #666;">'
+                                    f"{full_response}</div>",
+                                    unsafe_allow_html=True,
+                                )
                 finally:
                     # Always clear stop button and reset flag
                     stop_button_placeholder.empty()
@@ -266,7 +279,10 @@ def render_coach_panel(company_context: dict | None = None, auto_prompt: str | N
             }
         )
 
-        # Don't rerun - keep the dialog open for continued conversation
+        # Note: We don't call st.rerun() here because:
+        # 1. It would close the dialog (breaking the chat UX)
+        # 2. The response is already visible above in the chat container
+        # 3. On next interaction, the history will show all messages
 
     # Helpful tips when empty
     if len(st.session_state.coach_messages) == 0:
